@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "utils.h"
 
 #define MAX_LINE_LENGTH 2000
 #define MAX_ARGUMENTS 10
