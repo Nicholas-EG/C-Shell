@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #include "utils.h"
 
 #define MAX_LINE_LENGTH 2000
@@ -16,7 +17,9 @@
 
 void getUserInfo(char* buf) {
     printf("myShell> ");
-    fgets(buf, MAX_LINE_LENGTH, stdin);  // this can fail
+    if (fgets(buf, MAX_LINE_LENGTH, stdin) == NULL) {
+        printf("An error occurred reading input. Please try again.\n");
+    }
 }
 
 void parseInput(char** args, char* input) {
@@ -33,12 +36,25 @@ void parseInput(char** args, char* input) {
     args[i] = NULL;
 }
 
-int argToNumber(char* command) {
+int argToNumber(const char* command) {
     if (strcmp(command, "exit") == 0)
         return EXIT;
     else if (strcmp(command, "cd") == 0)
         return CD;
     return DEFAULT;
+}
+
+int isBackgroundProcess(char** args) {
+    if (args == NULL || args[0] == NULL) return 0;
+    int i = 0;
+    while (args[i + 1] != NULL) {
+        i++;
+    }
+    if (strcmp(args[i], "&") == 0) {
+        args[i] = NULL;
+        return 1;
+    }
+    return 0;
 }
 
 int runShell() {
@@ -60,14 +76,17 @@ int runShell() {
                     perror("cd error");
                 break;
             default: {
+                int background = isBackgroundProcess(args);
                 pid_t pid = fork();
                 if (pid == 0) {
                     execvp(args[0], args);
                     perror("exec error");
                     exit(1);
                 } else {
-                    int exit_signal;
-                    waitpid(pid, &exit_signal, 0);
+                    if (!background) {
+                        int exit_signal;
+                        waitpid(pid, &exit_signal, 0);
+                    }
                 }
             } break;
         }
@@ -77,10 +96,3 @@ int runShell() {
 int main() {
     runShell();
 }
-
-/**
- * Project structure:
- * while (take user input)
- *  parse user input
- *  if (input is exit) exit
- */
